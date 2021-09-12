@@ -1,0 +1,47 @@
+@text-color: rgb(107, 114, 128);
+
+.title() {
+  overflow: hidden;
+  transition: all 0.2s;
+  background: #d8d4c4;
+  font-size: 12px;
+  padding: 2px;
+  height: 22px;
+  color: @text-color;
+  position: relative;
+  display: flex;
+  user-select: none;
+  & > div {
+    flex: 1;
+    text-align: left;
+    padding: 0 5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  svg {
+    // width: 13px;
+    // height: 13px;
+    fill: @text-color;
+  }
+
+  span {
+    margin-right: 5px;
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s;
+    font-size: 2em;
+  }
+}
+
+.mask--layer {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+}
