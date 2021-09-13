@@ -1,22 +1,20 @@
 <script>
-import { initNotify } from './notify';
-
 import Item from './Item';
 import Panes from './Panes';
 import Accordion from './Accordion';
-import Shrink from './Shrink';
 import Bottom from './Bottom';
 import {
   addResizeListener,
   removeResizeListener,
   debounce,
-  padItem
+  padItem,
+  titleBlockHeight
 } from './utils';
 import interact from 'interactjs';
 
 export default {
   name: 'Layout',
-  components: { Panes, Item, Accordion, Shrink, Bottom },
+  components: { Panes, Item, Accordion, Bottom },
   provide() {
     return {
       addBlock: this.addBlock,
@@ -26,7 +24,6 @@ export default {
       togglePane: this.togglePane,
       toggleFull: this.toggleFull,
       layoutRef: this.layoutRef,
-      notify: this.notify,
     };
   },
   props: {
@@ -44,7 +41,6 @@ export default {
     },
   },
   data: () => ({
-    notify: initNotify(),
     full: false,
     history: {},
     bind: {},
@@ -78,11 +74,7 @@ export default {
             this.bind[name] = obj;
           }
         }
-        const resizeListener = debounce(
-          () => this.notify.$emit('resize'),
-          50,
-          true
-        );
+        const resizeListener = debounce(() => this.$emit('resize'), 50, true);
         addResizeListener(this.$el, resizeListener);
         this.$once('hook:destroyed', () => {
           removeResizeListener(this.$el, resizeListener);
@@ -405,6 +397,7 @@ export default {
         style: {
           height: this.height,
           width: this.width,
+          '--pane-layout-title-height': `${titleBlockHeight}px`,
         },
         on: {
           resize: panes => {
@@ -467,6 +460,11 @@ export default {
   position: relative;
   box-shadow: 0 0 1px;
 
+  .item__content {
+    div > .panes__pane:not(:first-child) {
+      border-left: 1px solid rgba(0, 0, 0, 0.02);
+    }
+  }
   ::-webkit-scrollbar {
     width: 5px;
     height: 5px;

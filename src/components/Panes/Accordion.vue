@@ -1,17 +1,17 @@
 <script>
-/* eslint-disable vue/no-mutating-props */
 import interact from 'interactjs';
+import TitleBlock from './TitleBlock';
 import {
+  titleBlockHeight,
   addResizeListener,
   removeResizeListener,
-  debounce,
-  createSvg,
-  svgs
+  debounce
 } from './utils';
 
 export default {
   name: 'Accordion',
-  inject: ['layoutRef', 'itemRef', 'notify'],
+  inject: ['layoutRef', 'itemRef'],
+  component: { TitleBlock },
   props: {
     items: {
       type: Array,
@@ -20,7 +20,9 @@ export default {
       },
     },
   },
-  data: () => ({}),
+  data: () => ({
+    recalcFillDebounce: null,
+  }),
   watch: {
     items() {
       this.init();
@@ -52,7 +54,9 @@ export default {
       });
     },
     recalcFill() {
-      const index = this.items.findIndex(item => !!item.fill && !item.detach);
+      const index = this.items.findIndex(item => {
+        return !!item.fill && !item.detach;
+      });
       if (index >= 0) {
         setTimeout(() => this.fill(index), 100);
       }
@@ -65,49 +69,49 @@ export default {
       if (this.items[index]._bind) {
         return;
       }
-      const t = this;
       const name = 'item_' + index;
       this.items[index]._bind = true;
       setTimeout(() => {
-        const el = this.$refs[name];
-        const board = el;
+        const board = this.$refs[name];
+        if (!board) return;
         const interactObj = interact(board);
         let x;
         let y;
-        const item = t.items[index];
+        const item = this.items[index];
 
         interactObj.draggable({
           preventDefault: 'always',
-          allowFrom: '.accotdion--title',
-          enabled: t.items[index].detach,
+          allowFrom: '.title__bolck',
+          enabled: this.items[index].detach,
           listeners: {
-            start() {
+            start: () => {
               x = item.x || 0;
               y = item.y || 0;
-              if (item.zIndex <= t.layoutRef().maxIndex) {
-                item.zIndex = t.layoutRef().maxIndex + 1;
+              if (item.zIndex <= this.layoutRef().maxIndex) {
+                item.zIndex = this.layoutRef().maxIndex + 1;
               }
             },
-            move(event) {
+            move: event => {
               x = (parseFloat(x) || 0) + event.dx;
               y = (parseFloat(y) || 0) + event.dy;
               event.target.style.transform = `translate(${x}px, ${y}px)`;
             },
-            end() {
+            end: () => {
               item.x = x;
               item.y = y;
-              t.layoutRef().maxIndex = item.zIndex;
+              this.layoutRef().maxIndex = item.zIndex;
             },
           },
         });
 
         interactObj.resizable({
           ...this.resizableOptions(index),
-          allowFrom: '.accotdion--board',
+          allowFrom: '.tools--board',
           listeners: {
-            start() {
+            start(event) {
               x = item.x || 0;
               y = item.y || 0;
+              event.target.classList.remove('board__transition');
             },
             move(event) {
               event.stopPropagation();
@@ -121,9 +125,11 @@ export default {
               Object.assign(event.target.style, v);
             },
             end(event) {
+              event.target.classList.add('board__transition');
+              item.fill = false;
               item.x = x;
               item.y = y;
-              if (event.rect.height <= 22) {
+              if (event.rect.height <= titleBlockHeight) {
                 item.open = false;
               } else {
                 item.open = true;
@@ -152,8 +158,9 @@ export default {
     },
     boardClass(index) {
       return {
-        board: true,
         item: true,
+        board: true,
+        board__transition: true,
         open: this.items[index].open,
         full: this.items[index].full,
         detach: this.items[index].detach,
@@ -204,14 +211,14 @@ export default {
       } = this.items[index];
       const style = {
         width,
-        height: open ? height : '22px',
+        height: open ? height : `${titleBlockHeight}px`,
         zIndex: full ? this.layoutRef().maxIndex + 1 : zIndex,
         transform: `translate(${x || 0}px, ${y || 0}px)`,
       };
       if (!detach) {
         style.width = 'auto';
         style.transform = 'none';
-        style.height = open ? size || 'auto' : '22px';
+        style.height = open ? size || 'auto' : `${titleBlockHeight}px`;
       }
       return style;
     },
@@ -225,21 +232,22 @@ export default {
         options.modifiers = [
           interact.modifiers.restrictSize({
             min: { width: 50, height: 26 },
-            // max: { ...this.layoutSize() },
           }),
         ];
       }
       return options;
     },
     fill(index) {
-      const titleHeight = parseFloat('22px');
-      // const detachSum = this.items.findIndex(item => item.detach);
       let titleSum = 0;
       this.items.forEach((item, itemIndex) => {
-        if (itemIndex !== Number(index) && !item.detach) {
-          titleSum++;
+        if (itemIndex !== Number(index)) {
+          if (!item.detach) titleSum++;
           this.$set(this.items[itemIndex], 'fill', false);
-          this.$set(this.items[itemIndex], 'open', false);
+          this.$set(
+            this.items[itemIndex],
+            'open',
+            !item.detach ? false : item.open
+          );
           return;
         }
         this.$set(this.items[itemIndex], 'fill', true);
@@ -247,7 +255,7 @@ export default {
       });
 
       const offsetHeight =
-        this.itemRef().$el.offsetHeight - titleHeight * titleSum;
+        this.itemRef().$el.offsetHeight - titleBlockHeight * titleSum;
       this.items[index].size = `${offsetHeight}px`;
     },
     full(index) {
@@ -287,150 +295,32 @@ export default {
   },
   render(h) {
     const items = [];
-    // const len = Object.keys(this.items).length - 1;
     for (const index in this.items) {
       if (Object.hasOwnProperty.call(this.items, index)) {
         const item = this.items[index];
-        const clickToggle = event => {
-          event.stopPropagation();
-          this.toggle(index);
-        };
-        // todo 上下移动
-        // const upOrDown =
-        //   item.full || item.detach
-        //     ? []
-        //     : [
-        //         index === '0'
-        //           ? ''
-        //           : h(
-        //               'span',
-        //               {
-        //                 class: 'accotdion--up',
-        //                 on: {
-        //                   click(event) {
-        //                     event.stopPropagation();
-        //                     t.movePlace(index, -1);
-        //                   },
-        //                 },
-        //               },
-        //               [createSvg(h, svgs.up)]
-        //             ),
-        //         Number(index) === len
-        //           ? ''
-        //           : h(
-        //               'span',
-        //               {
-        //                 class: 'accotdion--down',
-        //                 on: {
-        //                   click(event) {
-        //                     event.stopPropagation();
-        //                     t.movePlace(index, 1);
-        //                   },
-        //                 },
-        //               },
-        //               [createSvg(h, svgs.up)]
-        //             ),
-        //       ];
+
         const children = [
-          h(
-            'div',
-            {
-              class: 'accotdion--title',
-              on: {
-                click: event => {
-                  if (item.detach) return;
-                  clickToggle(event);
-                },
+          h(TitleBlock, {
+            props: {
+              index: Number(index),
+              item: this.items[index],
+            },
+            on: {
+              handle: (event, name) => {
+                event.stopPropagation();
+                if (typeof this[name] !== 'function') {
+                  return;
+                }
+
+                this[name](index);
               },
             },
-            [
-              h(
-                'span',
-                {
-                  class: 'accotdion--toggle',
-                  on: {
-                    click: clickToggle,
-                  },
-                },
-                [
-                  createSvg(
-                    h,
-                    item.full || item.detach ? svgs.dot : svgs.arrows
-                  ),
-                ]
-              ),
-              h('div', item.name),
-              h(
-                'span',
-                {
-                  class: 'accotdion--delete',
-                  attrs: {
-                    title: '删除',
-                  },
-                  on: {
-                    click: event => {
-                      event.stopPropagation();
-                      this.remove(index);
-                    },
-                  },
-                },
-                [createSvg(h, svgs.delete)]
-              ),
-              // ...upOrDown,
-              h(
-                'span',
-                {
-                  class: 'accotdion--fill',
-                  attrs: {
-                    title: '填满',
-                  },
-                  on: {
-                    click: event => {
-                      event.stopPropagation();
-                      this.fill(index);
-                    },
-                  },
-                },
-                [createSvg(h, svgs.fill)]
-              ),
-              h(
-                'span',
-                {
-                  class: 'accotdion--detach',
-                  attrs: {
-                    title: '悬浮',
-                  },
-                  on: {
-                    click: event => {
-                      event.stopPropagation();
-                      this.detach(index);
-                    },
-                  },
-                },
-                [createSvg(h, svgs.detach)]
-              ),
-              h(
-                'span',
-                {
-                  class: 'accotdion--full',
-                  attrs: {
-                    title: '全屏',
-                  },
-                  on: {
-                    click: event => {
-                      event.stopPropagation();
-                      this.full(index);
-                    },
-                  },
-                },
-                [createSvg(h, svgs.full)]
-              ),
-            ]
-          ),
+          }),
+
           h(
             'div',
             {
-              class: 'accotdion--board',
+              class: 'tools--board',
             },
             [
               h(
@@ -480,7 +370,7 @@ export default {
                 draggable: !item.full && !item.detach,
               },
             },
-            children
+            [children]
           )
         );
       }
@@ -498,7 +388,7 @@ export default {
 
 <style lang="less" scoped>
 @import './utils.less';
-@titleHeight: 22px;
+@titleHeight: var(--pane-layout-title-height);
 
 .accotdion {
   width: 100%;
@@ -509,11 +399,7 @@ export default {
   touch-action: none;
 }
 
-.accotdion--title {
-  .title();
-}
-
-.accotdion--board {
+.tools--board {
   overflow: auto;
   height: calc(100% - @titleHeight);
   & > div {
@@ -539,13 +425,32 @@ export default {
 .board {
   background: #fff;
   height: @titleHeight;
+  overflow: hidden;
+  &__transition {
+    transition: height 0.3s;
+  }
   &[style*='move'] {
     opacity: 0.9;
   }
   &.open {
     height: auto;
-    .accotdion--toggle {
+    overflow: auto;
+    /deep/ .tools--toggle {
       transform: rotate(180deg);
+    }
+  }
+  &.detach {
+    position: absolute;
+    z-index: 100;
+    left: 0;
+    top: 0;
+    box-shadow: 1px 1px 3px #484545;
+    border: 1px solid #ddd;
+    /deep/& {
+      .tools--fill,
+      .tools--delete {
+        visibility: hidden !important;
+      }
     }
   }
   &.full {
@@ -558,58 +463,13 @@ export default {
     transform: none !important;
     border: 0 !important;
     box-shadow: 1px 1px 3px #484545;
-    .accotdion--detach,
-    .accotdion--fill,
-    .accotdion--delete {
-      visibility: hidden !important;
-    }
-  }
-  &.detach {
-    position: absolute;
-    z-index: 100;
-    left: 0;
-    top: 0;
-    box-shadow: 1px 1px 3px #484545;
-    border: 1px solid #ddd;
-    .accotdion--fill,
-    .accotdion--delete {
-      visibility: hidden !important;
-    }
-  }
-  &:hover {
-    .accotdion--down,
-    .accotdion--fill,
-    .accotdion--up,
-    .accotdion--full,
-    .accotdion--detach,
-    .accotdion--delete {
-      visibility: visible;
-    }
-  }
-  .accotdion--down,
-  .accotdion--up,
-  .accotdion--delete,
-  .accotdion--detach,
-  .accotdion--fill,
-  .accotdion--full {
-    visibility: hidden;
-    &:hover {
-      svg {
-        fill: #111;
+    /deep/& {
+      .tools--detach,
+      .tools--fill,
+      .tools--delete {
+        visibility: hidden !important;
       }
     }
-  }
-  .accotdion--toggle,
-  .accotdion--fill {
-    svg {
-      height: 10px;
-    }
-  }
-  .accotdion--down {
-    transform: rotate(180deg);
-  }
-  .accotdion--toggle {
-    transform: rotate(90deg);
   }
 }
 </style>

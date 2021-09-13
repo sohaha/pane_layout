@@ -2,15 +2,17 @@
 import {
   addResizeListener,
   removeResizeListener,
-  createSvg,
+  titleBlockHeight,
   toSize,
-  debounce,
-  svgs
+  createSvg,
+  svgs,
+  debounce
 } from './utils';
+import TitleBlock from './TitleBlock';
 
 export default {
   name: 'Bottom',
-  inject: ['layoutRef', 'itemRef', 'togglePane', 'notify'],
+  inject: ['layoutRef', 'itemRef', 'togglePane'],
   props: {
     name: {
       type: String,
@@ -73,7 +75,11 @@ export default {
   },
   methods: {
     closeOpen() {
-      const minHeight = toSize(this.layoutRef(), '22px', 'clientHeight');
+      const minHeight = toSize(
+        this.layoutRef(),
+        `${titleBlockHeight}px`,
+        'clientHeight'
+      );
       let height = this.toggleState ? this.rawSize : minHeight;
       if (this.rawSize === minHeight) {
         this.rawSize = height = 50;
@@ -131,34 +137,67 @@ export default {
             },
           },
           [
-            h(
-              'div',
-              {
-                class: 'bottom--title',
+            h(TitleBlock, {
+              props: {
+                item: { name: this.name, full: true },
+                renderTools: (h, tools) => {
+                  const newTools = tools.slice(0, 2);
+                  newTools.push(
+                    h(
+                      'span',
+                      {
+                        class: 'tools--up',
+                        on: {
+                          click: toggleRise,
+                        },
+                      },
+                      [createSvg(h, svgs.arrows)]
+                    )
+                  );
+
+                  return newTools;
+                },
               },
-              [
-                h('span', {}, [createSvg(h, svgs.dot)]),
-                h(
-                  'div',
-                  {
-                    on: {
-                      click: toggleOpen,
-                    },
-                  },
-                  this.name
-                ),
-                h(
-                  'span',
-                  {
-                    class: 'bottom--toggle',
-                    on: {
-                      click: toggleRise,
-                    },
-                  },
-                  [createSvg(h, svgs.arrows)]
-                ),
-              ]
-            ),
+              on: {
+                handle: (event, name) => {
+                  switch (name) {
+                    case 'toggle':
+                      toggleOpen(event);
+                      break;
+                    default:
+                      console.log(name);
+                  }
+                },
+              },
+            }),
+            // h(
+            //   'div',
+            //   {
+            //     class: 'bottom--title',
+            //   },
+            //   [
+            //     h('span', {}, [createSvg(h, svgs.dot)]),
+            //     h(
+            //       'div',
+            //       {
+            //         on: {
+            //           click: toggleOpen,
+            //         },
+            //       },
+            //       this.name
+            //     ),
+            //     h(
+            //       'span',
+            //       {
+            //         class: 'bottom--toggle',
+            //         on: {
+            //           click: toggleRise,
+            //         },
+            //       },
+            //       [createSvg(h, svgs.arrows)]
+            //     ),
+            //   ]
+            // ),
             this.$slots.default,
           ]
         ),
@@ -179,7 +218,7 @@ export default {
     top: 0;
     position: absolute;
 
-    .bottom--toggle {
+    /deep/ .tools--up {
       visibility: visible;
       transform: rotate(180deg);
     }
@@ -196,24 +235,5 @@ export default {
   width: 100%;
   height: 100%;
   background: #fff;
-}
-
-.bottom--title {
-  .title();
-
-  .bottom--toggle {
-    visibility: hidden;
-    &:hover {
-      svg {
-        fill: #111;
-      }
-    }
-  }
-
-  &:hover {
-    .bottom--toggle {
-      visibility: visible;
-    }
-  }
 }
 </style>

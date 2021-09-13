@@ -1,6 +1,6 @@
 import ResizeObserver from 'resize-observer-polyfill';
 
-const isServer = typeof window === 'undefined';
+export const titleBlockHeight = 22;
 
 const resizeHandler = function(entries) {
   for (const entry of entries) {
@@ -14,7 +14,6 @@ const resizeHandler = function(entries) {
 };
 
 export const addResizeListener = function(el, fn) {
-  if (isServer) return;
   if (!el.$resizeListeners) {
     el.$resizeListeners = [];
     el.$ro = new ResizeObserver(resizeHandler);
