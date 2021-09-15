@@ -1,7 +1,6 @@
-import Vue from 'vue';
 import Layout from './Layout';
 
-export const components = { Layout };
+export const components = [Layout];
 
 function install(Vue) {
   if (install.installed) return;
@@ -13,11 +12,11 @@ if (typeof window !== 'undefined' && window.Vue) {
   install(window.Vue);
 }
 
-export default { install };
+export default { Layout, install };
 
 const indComponent = [];
 
-export function register(name, component) {
+export function register(Vue, name, component) {
   let n = name;
   let c = component;
   if (!component) {

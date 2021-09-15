@@ -1,45 +1,42 @@
 {
-  "name": "pane_layout",
-  "version": "0.1.0",
-  "private": true,
+  "name": "pane-layout",
+  "version": "0.0.1",
+  "main": "lib/pane-layout.common.js",
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
-    "lib": "vue-cli-service build --target lib ./src/components/Panes/index.js --dest ./lib "
+    "lib": "vue-cli-service build --target lib ./src/components/Panes/index.js --dest ./lib && rm -rf ./lib/demo.html"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:sohaha/pane_layout.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sohaha/pane_layout/issues"
   },
   "dependencies": {
-    "@vue/cli-plugin-eslint": "^5.0.0-beta.2",
-    "babel-eslint": "^10.1.0",
+    "interactjs": "^1.10.11",
+    "resize-observer-polyfill": "^1.5.1"
+  },
+  "devDependencies": {
     "core-js": "^3.6.5",
+    "vue": "^2.6.11",
     "eslint": "^7.32.0",
     "eslint-config-zls": "^1.0.3",
     "eslint-plugin-vue": "^7.15.1",
-    "interactjs": "^1.10.11",
-    "resize-observer-polyfill": "^1.5.1",
-    "vue": "^2.6.11",
-    "vue-eslint-parser": "^7.10.0"
-  },
-  "devDependencies": {
+    "@vue/cli-plugin-eslint": "^5.0.0-beta.2",
+    "babel-eslint": "^10.1.0",
+    "vue-eslint-parser": "^7.10.0",
     "@vue/cli-plugin-babel": "~4.5.0",
     "@vue/cli-service": "~4.5.0",
     "less-loader": "^6.2.0",
     "vue-template-compiler": "^2.6.11"
   },
-  "eslintConfig": {
-    "root": true,
-    "env": {
-      "node": true
-    },
-    "extends": [
-      "plugin:vue/essential",
-      "eslint:recommended"
-    ],
-    "parserOptions": {
-      "parser": "babel-eslint"
-    },
-    "rules": {}
-  },
+  "files": [
+    "lib"
+  ],
   "browserslist": [
     "> 1%",
     "last 2 versions",
